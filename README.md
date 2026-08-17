@@ -1,44 +1,57 @@
-# Family Road Trip Planner
+# Family Road Trip Planner — Mobile Edition
 
-Streamlit app for the Sep 6 - Oct 11, 2027 US road trip (Atlanta -> Martinez CA,
-36 days, route synced with the "Revised Itinerary" tab of the trip Google Sheet).
+Streamlit app for the Sep 6 – Oct 11, 2027 US road trip (Atlanta -> Martinez CA, 36 days, 27 stops, route synced with the "Revised Itinerary" tab of the trip Google Sheet).
+
+## What's new in mobile edition
+- **layout="centered"**, reduced top padding, media-query font tweaks for phones.
+- **Top-level tabs**: Itinerary (default), Map, Budget — no more endless scroll.
+- **Sticky header**: `36-day Atlanta → Martinez (Sept 6 – Oct 11 2027) | 27 stops | 8 rest days`.
+- **Itinerary tab**: Each day is an `st.expander` titled `Day N: Destination (date)`. Two-night stops marked `🛌 Extended Stay`. Inside: drive metrics, destination guide loader, daylight/weather, toddler routing, safety, and price check.
+- **Map tab**: Folium map moved here, with progress bar and GPS export.
+- **Budget tab**: Metric cards for Total/Avg/Day/Nights/Distance/Avg Drive, compact Plotly pie, dataframe with horizontal scroll, and live hotel prices behind "Show live lodging prices" expander.
+- Secrets-free: reads `os.getenv("OPENAI_API_KEY")`, `RAPIDAPI_KEY`, etc.
 
 ## Setup
 
     python3 -m venv .venv
     .venv/bin/pip install -r requirements.txt
 
-Create a `.env` file in this directory with:
+Create a `.env` file:
 
-    OPENAI_API_KEY=...      # for the AI destination guides and route fixes
-    RAPIDAPI_KEY=...        # for live hotel price checks
+    OPENAI_API_KEY=sk-...
+    RAPIDAPI_KEY=...
     RAPIDAPI_HOST=booking-com.p.rapidapi.com
     RAPIDAPI_ENDPOINT=/v1/hotels/search
 
-Never commit real keys - keep them only in `.env`.
+Never commit `.env` — it's already in `.gitignore`.
 
 ## Run
 
     .venv/bin/streamlit run app.py
 
+## Streamlit Cloud
+
+Push this folder flat to GitHub (no nested folder). In Streamlit Cloud Secrets, paste:
+
+```
+OPENAI_API_KEY="sk-..."
+RAPIDAPI_KEY="..."
+RAPIDAPI_HOST="booking-com.p.rapidapi.com"
+RAPIDAPI_ENDPOINT="https://booking-com.p.rapidapi.com/v1/hotels/search"
+```
+
 ## Tests
 
-    .venv/bin/pip install pytest
-    .venv/bin/python -m pytest
+    .venv/bin/python -m pytest -q --ignore=tools
 
-Note: `test_stovepipe.py` (Furnace Creek / Death Valley price probe) makes live
-RapidAPI calls and only runs when `RAPIDAPI_KEY` is set. `test_route_selection.py`
-is fully offline.
+`test_stovepipe.py` skips politely without `RAPIDAPI_KEY`.
 
-## What changed (Aug 2026 sync)
-- Route synced to the 36-day Revised Itinerary sheet tab (adds Birmingham AL,
-  Springfield MO, Omaha, Cody, West Yellowstone, Gardiner, Moab, Blanding,
-  Kanab, Springdale, Furnace Creek, Tehachapi, Lee Vining; replaces Stovepipe
-  Wells, Toadstool/Sage Creek/Creston detours, Hulett, Monterey-era stops).
-- REST_DAYS covers all two-night stops incl. the new Atlanta jet-lag day and
-  Cody rest day; names must match route_list exactly.
-- Date logic: Day 1 = arrival night in Atlanta, first drive on Day 2; dates now
-  align with the sheet's day numbers (verified against all 27 destination dates).
-- Fuel model: minivan-class 26 mpg default (editable in sidebar; hybrid Sienna
-  ~36 mpg), gas-price fallback ~$4.07, added AL/NE/MT state prices.
-- Lodging default lowered to ~£95/night (blended Airbnb/points/cash plan).
+## Route sync (Aug 2026)
+- 27 stops from Revised Itinerary sheet tab, 8 REST_DAYS (Atlanta jet-lag, Memphis, KC, Cody, Jackson, Grand Canyon, Yosemite, South Lake Tahoe)
+- Date logic: Day 1 = arrival night in Atlanta, first drive Day 2, matches sheet dates.
+- Fuel: 26 mpg minivan default (editable sidebar, hybrid Sienna ~36 mpg), gas fallback $4.07, AL/NE/MT state prices.
+
+## Mobile UX notes
+- Tabs have large tap targets; tables scroll horizontally on <600px.
+- Expanders lazy-load OpenAI guides only on button press to save data.
+- Map touchZoom enabled, scrollWheelZoom disabled for phone scroll safety.
