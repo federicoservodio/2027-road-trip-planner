@@ -666,7 +666,7 @@ with tab_budget:
         st.dataframe(df, width='stretch', hide_index=True)
 
         # live prices hidden
-        with st.expander("Show live lodging prices 🏨" (check one by one in Itinerary)", expanded=False):
+        with st.expander("Show live lodging prices (check one by one in Itinerary) 🏨", expanded=False):
             st.caption("Hotel sniping uses the same pricing engine. Quick checks live inside each day on the Itinerary tab.")
             if itinerary_rows:
                 origin=route_list[0]; start_checkin_label=trip_start_date.strftime("%b %d, %Y")
