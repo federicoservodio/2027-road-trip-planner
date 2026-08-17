@@ -34,7 +34,24 @@ st.set_page_config(page_title="2027 Road Trip Planner", page_icon="🚗", layout
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+/* Scope Inter to text only — do NOT override Material icons or all st-* (that leaks "arrow_down") */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMarkdownContainer"], [data-testid="stMetricValue"], [data-testid="stMetricLabel"], p, h1, h2, h3 {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Restore icon fonts that were clobbered by the broad [class*="st-"] rule */
+.material-symbols-outlined, [data-testid="stExpanderIcon"], [data-testid="stHeader"] [class*="material"], span[class*="material-symbols"] {
+  font-family: 'Material Symbols Outlined' !important;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+[data-testid="stExpanderIcon"] { display: inline-flex !important; }
+
+/* Hide the raw marker that leaks when summary font is overridden */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
 
 /* Tighten default Streamlit padding */
 .block-container { padding-top: 0.8rem !important; padding-bottom: 1rem !important; }
@@ -63,8 +80,8 @@ div[data-testid="stContainer"] { border-radius: 12px !important; border:1px soli
 /* Tabs bigger tap targets */
 button[data-baseweb="tab"] { font-size: 0.95rem !important; padding: 10px 12px !important; }
 
-/* Expanders */
-details summary { font-size: 0.96rem !important; }
+/* Expanders — keep size but don't nuke icons */
+div[data-testid="stExpander"] details summary p { font-size: 0.96rem !important; }
 
 /* Mobile media query */
 @media (max-width: 600px){
