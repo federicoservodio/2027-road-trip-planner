@@ -33,21 +33,46 @@ st.set_page_config(page_title="2027 Road Trip Planner", page_icon="🚗", layout
 # ==============================================================================
 st.markdown("""
 <style>
-/* Minimal mobile-safe tweaks */
-.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
 
-/* Simple sticky header */
+/* Tighten default Streamlit padding */
+.block-container { padding-top: 0.8rem !important; padding-bottom: 1rem !important; }
+[data-testid="stHeader"] { height: 0.5rem; }
+header[data-testid="stHeader"] { background: transparent; }
+
+/* Sticky trip header */
 .sticky-header {
-  position: sticky; top: 0; z-index: 10;
-  background: #ffffff; 
-  border-bottom: 1px solid #e2e8f0; padding: 8px 0; margin-bottom: 12px;
-  font-size: 0.92rem; font-weight: 600; color: #1e293b;
+  position: sticky; top: -0.5rem; z-index: 999;
+  background: #ffffffee; backdrop-filter: blur(6px);
+  border-bottom: 1px solid #e2e8f0; padding: 8px 12px; margin: -8px -12px 12px -12px;
+  font-size: 0.88rem; font-weight: 600; color: #1e293b;
 }
-.sticky-header small { font-weight: 400; color: #64748b; }
+.sticky-header small { font-weight: 500; color: #475569; }
 
-@media (max-width: 640px){
-  h1 { font-size: 1.35rem !important; }
-  h2 { font-size: 1.15rem !important; }
+/* Metric tweaks */
+[data-testid="stMetricValue"] { font-size: 1.35rem !important; font-weight: 700 !important; color: #1E3A8A !important; }
+[data-testid="stMetricLabel"] { font-size: 0.82rem !important; font-weight: 500 !important; color:#475569 !important; }
+
+/* Make tables horizontally scrollable */
+[data-testid="stDataFrame"] { overflow-x: auto; }
+
+/* Tighter containers on mobile */
+div[data-testid="stContainer"] { border-radius: 12px !important; border:1px solid #e2e8f0 !important; background:#fff !important;}
+
+/* Tabs bigger tap targets */
+button[data-baseweb="tab"] { font-size: 0.95rem !important; padding: 10px 12px !important; }
+
+/* Expanders */
+details summary { font-size: 0.96rem !important; }
+
+/* Mobile media query */
+@media (max-width: 600px){
+  .block-container { padding-left: 0.9rem !important; padding-right: 0.9rem !important; }
+  h1 { font-size: 1.45rem !important; }
+  h2 { font-size: 1.18rem !important; }
+  h3 { font-size: 1.02rem !important; }
+  [data-testid="stMetricValue"] { font-size: 1.15rem !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -334,28 +359,31 @@ def render_google_maps_export(waypoints):
 
 @st.cache_data
 def get_cached_distance(o_name,o_lat,o_lon,d_name,d_lat,d_lon,scenic_mode_active):
-    try:
-        url=f"http://router.project-osrm.org/route/v1/driving/{o_lon},{o_lat};{d_lon},{d_lat}?overview=false"
-        res=requests.get(url,timeout=5).json()
-        if res.get("code")=="Ok":
-            base_miles=res["routes"][0]["distance"]*0.000621371; base_hours=res["routes"][0]["duration"]/3600
-            if scenic_mode_active: base_miles*=1.15; base_hours*=1.35
-            return round(base_miles,1), round(base_hours,1)
-    except: pass
+    for base in ["https://router.project-osrm.org", "http://router.project-osrm.org"]:
+        try:
+            url=f"{base}/route/v1/driving/{o_lon},{o_lat};{d_lon},{d_lat}?overview=false"
+            res=requests.get(url, timeout=6, headers={"User-Agent":"road-trip-planner/1.0"}).json()
+            if res.get("code")=="Ok":
+                base_miles=res["routes"][0]["distance"]*0.000621371; base_hours=res["routes"][0]["duration"]/3600
+                if scenic_mode_active: base_miles*=1.15; base_hours*=1.35
+                return round(base_miles,1), round(base_hours,1)
+        except: continue
     return (230.0 if scenic_mode_active else 200.0), (4.0 if scenic_mode_active else 3.0)
 
 @st.cache_data
 def get_detailed_route_track(o_lat,o_lon,d_lat,d_lon,scenic_mode_active):
-    try:
-        url=f"http://router.project-osrm.org/route/v1/driving/{o_lon},{o_lat};{d_lon},{d_lat}?overview=full&geometries=geojson&alternatives=true"
-        res=requests.get(url,timeout=5).json()
-        if res.get("code")=="Ok":
-            routes=res.get("routes",[])
-            if scenic_mode_active and len(routes)>1: coords=routes[1]["geometry"]["coordinates"]
-            elif len(routes)>0: coords=routes[0]["geometry"]["coordinates"]
-            else: return [[o_lat,o_lon],[d_lat,d_lon]]
-            return [[point[1],point[0]] for point in coords]
-    except: pass
+    # Streamlit Cloud runs https — use https OSRM + proper headers to avoid blocks
+    for base in ["https://router.project-osrm.org", "http://router.project-osrm.org"]:
+        try:
+            url=f"{base}/route/v1/driving/{o_lon},{o_lat};{d_lon},{d_lat}?overview=full&geometries=geojson&alternatives=true"
+            res=requests.get(url, timeout=6, headers={"User-Agent":"road-trip-planner/1.0"}).json()
+            if res.get("code")=="Ok":
+                routes=res.get("routes",[])
+                if scenic_mode_active and len(routes)>1: coords=routes[1]["geometry"]["coordinates"]
+                elif len(routes)>0: coords=routes[0]["geometry"]["coordinates"]
+                else: continue
+                return [[pt[1], pt[0]] for pt in coords]
+        except: continue
     return [[o_lat,o_lon],[d_lat,d_lon]]
 
 @st.cache_data
@@ -448,7 +476,7 @@ Keep factual, reassuring but realistic, tailored to family with young child."""
     except: return f"⚠️ Safety data temporarily unavailable for {city_name}."
 
 # ========== STICKY HEADER ==========
-st.markdown('<div class="sticky-header">36-day Atlanta → Martinez (Sep 6 - Oct 11 2027) <small>| 27 stops | 8 rest days | Toddler-paced</small></div>', unsafe_allow_html=True)
+st.markdown('<div class="sticky-header">🚗 36-day Atlanta → Martinez (Sept 6 – Oct 11 2027) <small>| 27 stops | 8 rest days | Toddler-paced</small></div>', unsafe_allow_html=True)
 st.markdown("# 2027 Road Trip Planner")
 st.caption("Tap a tab below. Itinerary is your daily view — map and budget live in their own spots.")
 
@@ -511,10 +539,10 @@ with tab_itinerary:
             # Quick nav
             nav1, nav2 = st.columns(2)
             with nav1:
-                if st.button("Prev", disabled=(st.session_state.selected_leg_idx==0), width='stretch'):
+                if st.button("⬅️ Prev", disabled=(st.session_state.selected_leg_idx==0), width='stretch'):
                     st.session_state.selected_leg_idx=max(0,st.session_state.selected_leg_idx-1); safe_rerun()
             with nav2:
-                if st.button("Next", disabled=(st.session_state.selected_leg_idx>=len(route_list)-2), width='stretch'):
+                if st.button("Next ➡️", disabled=(st.session_state.selected_leg_idx>=len(route_list)-2), width='stretch'):
                     st.session_state.selected_leg_idx=min(len(route_list)-2,st.session_state.selected_leg_idx+1); safe_rerun()
 
             # Day expanders
@@ -543,7 +571,7 @@ with tab_itinerary:
                             st.markdown(st.session_state[f"insights_{idx}"])
 
                     # Collapsed details - keep inside expander as sub-expanders for mobile brevity
-                    with st.expander("Daylight + Weather ☀️", expanded=False):
+                    with st.expander("☀️ Daylight + Weather", expanded=False):
                         target_yday=row.get("Day of Year",260)
                         daylight=calculate_approx_daylight(dest.latitude, target_yday)
                         st.markdown(f"~**{daylight} hrs daylight** on {row['Start Date']}.")
@@ -552,7 +580,7 @@ with tab_itinerary:
                         hazards=get_cached_seasonal_hazards(orig.name,dest.name,row["Start Date"])
                         st.markdown(hazards)
 
-                    with st.expander("Toddler routing 👶", expanded=False):
+                    with st.expander("👶 Toddler routing", expanded=False):
                         h_time=row["DriveHours"]
                         if h_time<=3.0: st.info("⏰ **8:30 AM** (arrive lunch) or **1:00 PM** (nap window).")
                         elif h_time<=7.0: st.info(f"⏰ **8:00 AM** start — splits {h_time} hr drive around midday break.")
@@ -567,7 +595,7 @@ with tab_itinerary:
                         elif h_time>3.0: st.markdown(get_cached_ai_midday_break(orig.name,dest.name,h_time))
                         else: st.markdown("Fits single nap window.")
 
-                    with st.expander("Safety ⚠️", expanded=False):
+                    with st.expander("⚠️ Safety", expanded=False):
                         st.warning("Packed out-of-state plates attract break-ins — hide valuables.")
                         st.markdown(get_cached_safety_alerts(dest.name))
 
@@ -599,33 +627,46 @@ with tab_map:
     if len(route_list)<2:
         st.info("Add at least 2 stops to see a map.")
     else:
-        m=folium.Map(location=[39.8283,-98.5795], tiles="CartoDB positron", zoom_start=4, zoom_control=False, dragging=True, scrollWheelZoom=False, doubleClickZoom=False, boxZoom=False, touchZoom=True, control_scale=False)
-        waypoint_coords=[[wp.latitude,wp.longitude] for wp in route_list]; m.fit_bounds(waypoint_coords)
+        # OpenStreetMap is most reliable on Streamlit Cloud; keep zoom controls on
+        m=folium.Map(location=[39.8283,-98.5795], tiles="OpenStreetMap", zoom_start=4,
+                     zoom_control=True, control_scale=True, scrollWheelZoom=True, doubleClickZoom=True, dragging=True, touchZoom=True)
+        waypoint_coords=[[wp.latitude,wp.longitude] for wp in route_list]
+        try: m.fit_bounds(waypoint_coords, padding=(20,20), max_zoom=7)
+        except: m.fit_bounds(waypoint_coords)
         active_leg_idx=st.session_state.selected_leg_idx
         for i in range(len(route_list)-1):
             orig,dest=route_list[i],route_list[i+1]
-            if abs(i-active_leg_idx)<=1: leg_track=get_detailed_route_track(orig.latitude,orig.longitude,dest.latitude,dest.longitude,scenic_mode)
-            else: leg_track=[[orig.latitude,orig.longitude],[dest.latitude,dest.longitude]]
-            if i==active_leg_idx:
-                folium.PolyLine(locations=leg_track,color="#4F46E5",weight=6,opacity=1.0,z_index=999).add_to(m)
+            # Draw real road for nearby legs, straight for distant ones to stay under OSRM rate limit
+            if abs(i-active_leg_idx)<=2:
+                leg_track=get_detailed_route_track(orig.latitude,orig.longitude,dest.latitude,dest.longitude,scenic_mode)
             else:
-                color="#10B981" if scenic_mode else "#2563EB"; dash_array="4, 6" if scenic_mode else None
-                folium.PolyLine(locations=leg_track,color=color,weight=3,opacity=0.75,dash_array=dash_array).add_to(m)
+                leg_track=[[orig.latitude,orig.longitude],[dest.latitude,dest.longitude]]
+            if i==active_leg_idx:
+                folium.PolyLine(locations=leg_track,color="#4F46E5",weight=6,opacity=1.0,z_index=999, tooltip=f"{orig.name} → {dest.name} (active)").add_to(m)
+            else:
+                color="#10B981" if scenic_mode else "#2563EB"
+                dash_array="6, 8" if scenic_mode else None
+                folium.PolyLine(locations=leg_track,color=color,weight=3,opacity=0.7,dash_array=dash_array, tooltip=f"{orig.name} → {dest.name}").add_to(m)
         for idx,wp in enumerate(route_list):
-            border_color,fill_color,radius=("#0F766E","#2DD4BF",7) if wp.is_national_park else ("#1E3A8A","#60A5FA",5)
-            folium.CircleMarker(location=[wp.latitude,wp.longitude],radius=radius,color=border_color,weight=1.5,fill=True,fill_color=fill_color,fill_opacity=0.95,popup=folium.Popup(f"<div style='font-family:sans-serif;font-size:12px;'><b>{wp.name}</b></div>",max_width=200)).add_to(m)
-        map_data=st_folium(m,width="100%",height=420,key=f"master_trip_map_mobile_{scenic_mode}")
+            is_active = idx==active_leg_idx or idx==active_leg_idx+1
+            border_color,fill_color,radius=("#0F766E","#2DD4BF",9 if is_active else 7) if wp.is_national_park else ("#1E3A8A","#60A5FA",7 if is_active else 5)
+            # Wider click target on mobile
+            folium.CircleMarker(location=[wp.latitude,wp.longitude],radius=radius+4,color=border_color,weight=2.2,fill=True,fill_color=fill_color,fill_opacity=0.95,
+                                 popup=folium.Popup(f"<div style='font-family:sans-serif;font-size:12px;'><b>{idx+1}. {wp.name}</b><br>{wp.state}</div>",max_width=220),
+                                 tooltip=f"{idx+1}. {wp.name}").add_to(m)
+        map_data=st_folium(m,width="100%",height=460,key=f"master_trip_map_mobile_{scenic_mode}_{st.session_state.selected_leg_idx}", returned_objects=["last_object_clicked"])
         if map_data and map_data.get("last_object_clicked"):
             click_coords=map_data["last_object_clicked"]
             if click_coords != st.session_state.last_map_click:
                 st.session_state.last_map_click=click_coords; lat,lon=click_coords.get("lat"),click_coords.get("lng")
+                # Increased tolerance for finger taps
                 for idx,wp in enumerate(route_list):
-                    if abs(wp.latitude-lat)<0.008 and abs(wp.longitude-lon)<0.008:
-                        st.session_state.selected_leg_idx=max(0,idx-1); safe_rerun()
-        # progress
+                    if abs(wp.latitude-lat)<0.018 and abs(wp.longitude-lon)<0.018:
+                        st.session_state.selected_leg_idx=max(0,idx-1 if idx>0 else 0); safe_rerun()
+                        break
         total_legs_count=len(route_list)-1; active_leg=st.session_state.selected_leg_idx; progress_percent=(active_leg/total_legs_count) if total_legs_count>0 else 0
-        st.progress(progress_percent); st.caption(f"Leg {active_leg+1} of {total_legs_count} • {int(progress_percent*100)}% complete")
-        with st.expander("Mobile GPS Links 🔗", expanded=False):
+        st.progress(progress_percent); st.caption(f"Leg {active_leg+1} of {total_legs_count} • {int(progress_percent*100)}% complete • Tap a stop bubble to jump • Blue = active road, grey/green = other legs")
+        with st.expander("🔗 Mobile GPS Links", expanded=False):
             render_google_maps_export(route_list)
 
 with tab_budget:
@@ -666,7 +707,7 @@ with tab_budget:
         st.dataframe(df, width='stretch', hide_index=True)
 
         # live prices hidden
-        with st.expander("Show live lodging prices (check one by one in Itinerary) 🏨", expanded=False):
+        with st.expander("🏨 Show live lodging prices (check one by one in Itinerary)", expanded=False):
             st.caption("Hotel sniping uses the same pricing engine. Quick checks live inside each day on the Itinerary tab.")
             if itinerary_rows:
                 origin=route_list[0]; start_checkin_label=trip_start_date.strftime("%b %d, %Y")
