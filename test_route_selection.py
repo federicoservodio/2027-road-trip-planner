@@ -1,6 +1,8 @@
+from datetime import date
 from types import SimpleNamespace
 
 from route_utils import (
+    build_origin_itinerary_summary,
     build_route_selection,
     build_scenario_comparison,
     recommend_route_style,
@@ -10,6 +12,31 @@ from route_utils import (
     recommend_lunch_break,
     recommend_diaper_break,
 )
+
+
+def test_build_origin_itinerary_summary_includes_origin_city_with_rest_day():
+    row = build_origin_itinerary_summary("Atlanta, Georgia", date(2027, 9, 6), rest_days=1)
+
+    assert row["Route Stretch"] == "Atlanta, Georgia (Arrival / Base)"
+    assert row["Start Date"] == "Sep 06"
+    assert row["Rest Days"] == 1
+
+
+def test_itinerary_destination_rows_stay_in_bounds_with_origin_entry():
+    itinerary_rows = [
+        build_origin_itinerary_summary("Atlanta, Georgia", date(2027, 9, 6), rest_days=1),
+        {"Check-in Date": "2027-09-07"},
+        {"Check-in Date": "2027-09-08"},
+    ]
+    route_list = [
+        SimpleNamespace(name="Atlanta, Georgia"),
+        SimpleNamespace(name="Birmingham, Alabama"),
+        SimpleNamespace(name="Memphis, Tennessee"),
+    ]
+
+    destination_names = [route_list[idx].name for idx, _ in enumerate(itinerary_rows[1:], start=1)]
+
+    assert destination_names == ["Birmingham, Alabama", "Memphis, Tennessee"]
 
 
 def test_build_route_selection_filters_to_selected_names():

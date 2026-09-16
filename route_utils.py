@@ -1,3 +1,18 @@
+def build_origin_itinerary_summary(origin_name, start_date, rest_days=0):
+    """Create the origin-city itinerary row so the starting location appears in the trip summary."""
+    return {
+        "Leg": "#0",
+        "Start Date": start_date.strftime("%b %d"),
+        "Check-in Date": start_date.isoformat(),
+        "Day of Year": start_date.timetuple().tm_yday,
+        "Route Stretch": f"{origin_name} (Arrival / Base)",
+        "Distance": "0.0 mi",
+        "Driving Time": "0.0 hrs",
+        "Pace & Status": "Arrival + recovery day" if rest_days else "Trip start",
+        "Rest Days": rest_days,
+    }
+
+
 def build_route_selection(waypoints, selected_names):
     if not selected_names:
         return []
