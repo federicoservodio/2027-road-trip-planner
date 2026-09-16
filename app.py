@@ -660,7 +660,8 @@ with tab_map:
         st.info("Add at least 2 stops to see a map.")
     else:
         m=folium.Map(location=[39.8283,-98.5795], tiles="OpenStreetMap", zoom_start=4, zoom_control=False, dragging=True, scrollWheelZoom=False, doubleClickZoom=False, boxZoom=False, touchZoom=True, control_scale=False)
-        waypoint_coords=[[wp.latitude,wp.longitude] for wp in route_list]; m.fit_bounds(waypoint_coords)
+        # Keep a stable US viewport when Folium initializes inside a hidden tab.
+        # Calling fit_bounds there can leave Leaflet at a repeated world view.
         active_leg_idx=st.session_state.selected_leg_idx
         for i in range(len(route_list)-1):
             orig,dest=route_list[i],route_list[i+1]
@@ -691,6 +692,9 @@ with tab_map:
 with tab_budget:
     if not st.session_state.run_analysis:
         st.info("Tap **Calculate Trip Timeline** in Itinerary tab to see budget.")
+        if st.button("▶️ Calculate Trip Timeline", key="calculate_budget", type="primary", width="stretch"):
+            st.session_state.run_analysis=True
+            safe_rerun()
     else:
         st.markdown("### 💰 Budget Snapshot")
         c1,c2,c3=st.columns(3)
