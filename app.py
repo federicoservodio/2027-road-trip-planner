@@ -26,7 +26,7 @@ if RAPIDAPI_KEY is None:
 # Initialize OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.set_page_config(page_title="2027 Road Trip Planner", page_icon="🚗", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="2027 Road Trip Planner", page_icon="🚗", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
 # 🎨 MOBILE-FIRST STYLING
@@ -36,8 +36,11 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
 
-/* Tighten default Streamlit padding */
-.block-container { padding-top: 0.8rem !important; padding-bottom: 1rem !important; }
+/* Responsive canvas: wide enough for desktop, still bounded for readability. */
+.block-container {
+    width: 100%; max-width: 1180px; margin: 0 auto;
+    padding: 1.25rem 2rem 2rem !important;
+}
 [data-testid="stHeader"] { height: 0.5rem; }
 header[data-testid="stHeader"] { background: transparent; }
 
@@ -45,8 +48,8 @@ header[data-testid="stHeader"] { background: transparent; }
 .sticky-header {
   position: sticky; top: -0.5rem; z-index: 999;
   background: #ffffffee; backdrop-filter: blur(6px);
-  border-bottom: 1px solid #e2e8f0; padding: 8px 12px; margin: -8px -12px 12px -12px;
-  font-size: 0.88rem; font-weight: 600; color: #1e293b;
+    border-bottom: 1px solid #e2e8f0; padding: 10px 16px; margin: -1.25rem -2rem 1.25rem;
+    font-size: 1rem; font-weight: 600; color: #1e293b;
 }
 .sticky-header small { font-weight: 500; color: #475569; }
 
@@ -57,8 +60,12 @@ header[data-testid="stHeader"] { background: transparent; }
 /* Make tables horizontally scrollable */
 [data-testid="stDataFrame"] { overflow-x: auto; }
 
-/* Tighter containers on mobile */
-div[data-testid="stContainer"] { border-radius: 12px !important; border:1px solid #e2e8f0 !important; background:#fff !important;}
+/* Consistent content framing at both desktop and mobile widths. */
+div[data-testid="stContainer"] {
+    border-radius: 12px !important; border: 1px solid #e2e8f0 !important;
+    background: #fff !important; padding: 1rem 1.1rem !important;
+    margin-bottom: 0.9rem !important;
+}
 
 /* Tabs bigger tap targets */
 button[data-baseweb="tab"] { font-size: 0.95rem !important; padding: 10px 12px !important; }
@@ -67,8 +74,9 @@ button[data-baseweb="tab"] { font-size: 0.95rem !important; padding: 10px 12px !
 details summary { font-size: 0.96rem !important; }
 
 /* Mobile media query */
-@media (max-width: 600px){
-  .block-container { padding-left: 0.9rem !important; padding-right: 0.9rem !important; }
+@media (max-width: 768px){
+    .block-container { padding: 0.8rem 0.9rem 1rem !important; }
+    .sticky-header { margin: -0.8rem -0.9rem 0.9rem; padding: 8px 12px; font-size: 0.88rem; }
   h1 { font-size: 1.45rem !important; }
   h2 { font-size: 1.18rem !important; }
   h3 { font-size: 1.02rem !important; }
