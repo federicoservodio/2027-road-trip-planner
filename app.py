@@ -692,9 +692,6 @@ with tab_map:
 with tab_budget:
     if not st.session_state.run_analysis:
         st.info("Tap **Calculate Trip Timeline** in Itinerary tab to see budget.")
-        if st.button("▶️ Calculate Trip Timeline", key="calculate_budget", type="primary", width="stretch"):
-            st.session_state.run_analysis=True
-            safe_rerun()
     else:
         st.markdown("### 💰 Budget Snapshot")
         c1,c2,c3=st.columns(3)
