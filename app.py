@@ -34,7 +34,16 @@ st.set_page_config(page_title="2027 Road Trip Planner", page_icon="🚗", layout
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap');
+html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* Keep Streamlit's icon glyphs from being replaced by their text names. */
+[data-testid="stIconMaterial"] {
+    font-family: 'Material Symbols Rounded' !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    line-height: 1 !important;
+}
 
 /* Responsive canvas: wide enough for desktop, still bounded for readability. */
 .block-container {
