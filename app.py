@@ -659,7 +659,7 @@ with tab_map:
     if len(route_list)<2:
         st.info("Add at least 2 stops to see a map.")
     else:
-        m=folium.Map(location=[39.8283,-98.5795], tiles="CartoDB positron", zoom_start=4, zoom_control=False, dragging=True, scrollWheelZoom=False, doubleClickZoom=False, boxZoom=False, touchZoom=True, control_scale=False)
+        m=folium.Map(location=[39.8283,-98.5795], tiles="OpenStreetMap", zoom_start=4, zoom_control=False, dragging=True, scrollWheelZoom=False, doubleClickZoom=False, boxZoom=False, touchZoom=True, control_scale=False)
         waypoint_coords=[[wp.latitude,wp.longitude] for wp in route_list]; m.fit_bounds(waypoint_coords)
         active_leg_idx=st.session_state.selected_leg_idx
         for i in range(len(route_list)-1):
