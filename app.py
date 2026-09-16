@@ -223,8 +223,9 @@ def safe_rerun():
         if hasattr(st,"rerun"): st.rerun(); return
     except: pass
     st.session_state["_needs_manual_refresh"]=True
-    try: st.stop()
-    except: raise RuntimeError("Please refresh")
+    if hasattr(st, "stop"):
+        st.stop()
+    raise RuntimeError("Please refresh")
 
 AVG_US_GAS_PRICE=4.07
 STATE_GAS_PRICES={"GA":3.78,"AL":3.62,"TN":3.66,"MO":3.78,"NE":3.80,"SD":4.00,"WY":4.25,"MT":4.10,"UT":4.34,"AZ":4.46,"NV":4.94,"CA":5.78}
