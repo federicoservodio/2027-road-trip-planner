@@ -493,7 +493,7 @@ Keep factual, reassuring but realistic, tailored to family with young child."""
 # ========== STICKY HEADER ==========
 st.markdown('<div class="sticky-header">🚗 36-day Atlanta → Martinez (Sept 6 – Oct 11 2027) <small>| 27 stops | 8 rest days | Toddler-paced</small></div>', unsafe_allow_html=True)
 st.markdown("# 2027 Road Trip Planner")
-st.caption("Tap a tab below. Itinerary is your daily view — map and budget live in their own spots.")
+st.caption("Your daily itinerary, destination guides, driving details, and lodging checks.")
 
 # Timeline compute button - above tabs for access anywhere
 if st.button("▶️ Calculate Trip Timeline", type="primary", width='stretch'):
@@ -533,10 +533,7 @@ if st.session_state.run_analysis and len(route_list)>=2:
     scenario_summary=build_scenario_comparison(route_list, lambda o_name,o_lat,o_lon,d_name,d_lat,d_lon,scenic_mode_active: get_cached_distance(o_name,o_lat,o_lon,d_name,d_lat,d_lon,scenic_mode_active))
     recommendation=recommend_route_style(scenario_summary, budget_tolerance=max(1000.0, grand_total*0.8))
 
-# ========== TABS ==========
-tab_itinerary, tab_map, tab_budget = st.tabs(["Itinerary", "Map", "Budget"])
-
-with tab_itinerary:
+with st.container():
     if not st.session_state.run_analysis:
         st.info("👆 Tap **Calculate Trip Timeline** up top to populate the day-by-day view.")
         if len(route_list)>=2:
@@ -654,110 +651,4 @@ with tab_itinerary:
                 st.markdown("---")
                 pdf_bytes=generate_pdf_itinerary(itinerary_rows, grand_total)
                 st.download_button(label="📥 Download PDF Itinerary", data=pdf_bytes, file_name="Family_Road_Trip_2027.pdf", mime="application/pdf", width='stretch')
-
-with tab_map:
-    if len(route_list)<2:
-        st.info("Add at least 2 stops to see a map.")
-    else:
-        m=folium.Map(location=[39.8283,-98.5795], tiles="OpenStreetMap", zoom_start=4, zoom_control=False, dragging=True, scrollWheelZoom=False, doubleClickZoom=False, boxZoom=False, touchZoom=True, control_scale=False)
-        # Keep a stable US viewport when Folium initializes inside a hidden tab.
-        # Calling fit_bounds there can leave Leaflet at a repeated world view.
-        active_leg_idx=st.session_state.selected_leg_idx
-        for i in range(len(route_list)-1):
-            orig,dest=route_list[i],route_list[i+1]
-            if abs(i-active_leg_idx)<=1: leg_track=get_detailed_route_track(orig.latitude,orig.longitude,dest.latitude,dest.longitude,scenic_mode)
-            else: leg_track=[[orig.latitude,orig.longitude],[dest.latitude,dest.longitude]]
-            if i==active_leg_idx:
-                folium.PolyLine(locations=leg_track,color="#4F46E5",weight=6,opacity=1.0,z_index=999).add_to(m)
-            else:
-                color="#10B981" if scenic_mode else "#2563EB"; dash_array="4, 6" if scenic_mode else None
-                folium.PolyLine(locations=leg_track,color=color,weight=3,opacity=0.75,dash_array=dash_array).add_to(m)
-        for idx,wp in enumerate(route_list):
-            border_color,fill_color,radius=("#0F766E","#2DD4BF",7) if wp.is_national_park else ("#1E3A8A","#60A5FA",5)
-            folium.CircleMarker(location=[wp.latitude,wp.longitude],radius=radius,color=border_color,weight=1.5,fill=True,fill_color=fill_color,fill_opacity=0.95,popup=folium.Popup(f"<div style='font-family:sans-serif;font-size:12px;'><b>{wp.name}</b></div>",max_width=200)).add_to(m)
-        map_data=st_folium(m,width="100%",height=420,key=f"master_trip_map_mobile_{scenic_mode}")
-        if map_data and map_data.get("last_object_clicked"):
-            click_coords=map_data["last_object_clicked"]
-            if click_coords != st.session_state.last_map_click:
-                st.session_state.last_map_click=click_coords; lat,lon=click_coords.get("lat"),click_coords.get("lng")
-                for idx,wp in enumerate(route_list):
-                    if abs(wp.latitude-lat)<0.008 and abs(wp.longitude-lon)<0.008:
-                        st.session_state.selected_leg_idx=max(0,idx-1); safe_rerun()
-        # progress
-        total_legs_count=len(route_list)-1; active_leg=st.session_state.selected_leg_idx; progress_percent=(active_leg/total_legs_count) if total_legs_count>0 else 0
-        st.progress(progress_percent); st.caption(f"Leg {active_leg+1} of {total_legs_count} • {int(progress_percent*100)}% complete")
-        with st.expander("🔗 Mobile GPS Links", expanded=False):
-            render_google_maps_export(route_list)
-
-with tab_budget:
-    if not st.session_state.run_analysis:
-        st.info("Tap **Calculate Trip Timeline** in Itinerary tab to see budget.")
-    else:
-        st.markdown("### 💰 Budget Snapshot")
-        c1,c2,c3=st.columns(3)
-        with c1: st.metric("Total Est.", f"£{grand_total:,.0f}")
-        with c2: st.metric("Avg / Day", f"£{(grand_total/max(1,total_days)):,.0f}")
-        with c3: st.metric("Distance", f"{total_miles:,.0f} mi")
-        c4,c5,c6=st.columns(3)
-        with c4: st.metric("Nights", f"{total_days}")
-        with c5: st.metric("Avg Drive", f"{sum([r['DriveHours'] for r in itinerary_rows])/max(1,len(itinerary_rows)):.1f}h")
-        with c6: st.metric("Park Pass", f"£{subtotal_parks:,.0f}")
-
-        # compact pie still but smaller
-        with st.container(border=True):
-            st.markdown("#### Allocation")
-            labels=['Vehicle Rental','Fuel','Lodging','Food','Activities','Park Admissions','Buffer']
-            values=[subtotal_rental,total_fuel,subtotal_lodging,subtotal_food,subtotal_activities,subtotal_parks,buffer_amount]
-            colors=['#1E3A8A','#2563EB','#3B82F6','#60A5FA','#93C5FD','#0F766E','#94A3B8']
-            fig=go.Figure(data=[go.Pie(labels=labels,values=values,hole=.45,marker=dict(colors=colors),hoverinfo="label+value+percent",textinfo="percent")])
-            fig.update_layout(showlegend=True,legend=dict(orientation="h",yanchor="bottom",y=-0.35,xanchor="center",x=0.5),margin=dict(t=10,b=10,l=10,r=10),height=300)
-            st.plotly_chart(fig,width='stretch')
-
-        if scenario_summary and recommendation:
-            st.info(f"💡 Best fit: **{recommendation['recommendation']}** — {recommendation['reason']}")
-            with st.columns(2)[0]: st.metric("Fast", f"{scenario_summary['Fast']['miles']:,.1f} mi", f"{scenario_summary['Fast']['hours']:,.1f} hrs")
-            with st.columns(2)[1]: st.metric("Scenic", f"{scenario_summary['Scenic']['miles']:,.1f} mi", f"{scenario_summary['Scenic']['hours']:,.1f} hrs")
-
-        # compact dataframe
-        st.markdown("#### Daily Breakdown")
-        df_rows=[]
-        for r in itinerary_rows:
-            df_rows.append({"Day":r["Start Date"],"Route":r["Route Stretch"],"Mi":r["DistMiles"],"Hrs":r["DriveHours"],"Pace":r["Pace & Status"],"Rest":r["Rest Days"]})
-        df=pd.DataFrame(df_rows)
-        st.dataframe(df, width='stretch', hide_index=True)
-
-        # live prices hidden
-        with st.expander("🏨 Show live lodging prices (check one by one in Itinerary)", expanded=False):
-            st.caption("Hotel sniping uses the same pricing engine. Quick checks live inside each day on the Itinerary tab.")
-            if itinerary_rows:
-                origin=route_list[0]; start_checkin_label=trip_start_date.strftime("%b %d, %Y")
-                with st.container(border=True):
-                    s1,s2=st.columns([3,1])
-                    with s1: st.markdown(f"**Starting Night: {origin.name}**\n\nCheck-in: {start_checkin_label}")
-                    with s2:
-                        if st.button("Check Price", key="price_btn_start_budget"):
-                            with st.spinner(f"Sniping {origin.name}..."):
-                                res=fetch_live_hotel_price(origin.name,trip_start_date.isoformat(),(trip_start_date+timedelta(days=1)).isoformat(),min_review_score,min_hotel_class,origin.latitude,origin.longitude)
-                                if res["status"]=="success": st.success(f"£{res['price']:,} at {res['name']}")
-                                else: st.error(res.get("message","Failed"))
-                for idx,row in enumerate(itinerary_rows):
-                    dest=row["DestObj"]; destination_label=dest.name; checkin_label=date.fromisoformat(row["Check-in Date"]).strftime("%b %d, %Y")
-                    with st.container(border=True):
-                        c1,c2,c3=st.columns([1.2,2,1])
-                        with c1:
-                            if dest.is_national_park:
-                                st.error("🚨 Park")
-                            else:
-                                st.success("✅ Stop")
-                        with c2: st.markdown(f"**{destination_label}**\n\n{checkin_label}"); 
-                        with c3:
-                            if st.button("Price", key=f"price_budget_{idx}"):
-                                with st.spinner(f"Checking {destination_label}..."):
-                                    checkin=date.fromisoformat(row["Check-in Date"]); checkout=(checkin+timedelta(days=1)).isoformat()
-                                    res=fetch_live_hotel_price(destination_label,checkin.isoformat(),checkout,min_review_score,min_hotel_class,dest.latitude,dest.longitude)
-                                    if res["status"]=="success": st.success(f"£{res['price']:,} at {res['name']}")
-                                    else: st.error("Failed")
-
-        pdf_bytes=generate_pdf_itinerary(itinerary_rows, grand_total)
-        st.download_button(label="📥 PDF Itinerary", data=pdf_bytes, file_name="Family_Road_Trip_2027.pdf", mime="application/pdf", width='stretch')
 
