@@ -551,15 +551,6 @@ with tab_itinerary:
             st.markdown(f"**{total_days} days** • **{total_miles:,.0f} mi** • **£{grand_total:,.0f} est.**")
             st.progress(min(1.0, st.session_state.selected_leg_idx / max(1,len(route_list)-2)))
 
-            # Quick nav
-            nav1, nav2 = st.columns(2)
-            with nav1:
-                if st.button("⬅️ Prev", disabled=(st.session_state.selected_leg_idx==0), width='stretch'):
-                    st.session_state.selected_leg_idx=max(0,st.session_state.selected_leg_idx-1); safe_rerun()
-            with nav2:
-                if st.button("Next ➡️", disabled=(st.session_state.selected_leg_idx>=len(route_list)-2), width='stretch'):
-                    st.session_state.selected_leg_idx=min(len(route_list)-2,st.session_state.selected_leg_idx+1); safe_rerun()
-
             if st.session_state.selected_leg_idx == 0:
                 origin = route_list[0]
                 origin_date = trip_start_date
