@@ -555,23 +555,23 @@ with tab_itinerary:
                 origin_date = trip_start_date
                 st.markdown(f"### 🏡 Arrival in {origin.name}")
                 st.caption(f"Arrival: {origin_date.strftime('%b %d, %Y')} • {REST_DAYS.get(origin.name, 0)} recovery day")
-                with st.expander(f"Arrival details for {origin.name}", expanded=True):
-                    with st.container(border=True):
-                        st.markdown(f"**City guide: {origin.name}**")
-                        if st.button(f"Load guide for {origin.name}", key="guide_origin"):
-                            with st.spinner("Fetching guide..."):
-                                st.session_state["insights_origin"] = get_cached_location_insights(origin.name, scenic_mode)
-                        if "insights_origin" in st.session_state:
-                            st.markdown(st.session_state["insights_origin"])
+                with st.container(border=True):
+                    st.markdown(f"**Arrival details for {origin.name}**")
+                    st.markdown(f"**City guide: {origin.name}**")
+                    if st.button(f"Load guide for {origin.name}", key="guide_origin"):
+                        with st.spinner("Fetching guide..."):
+                            st.session_state["insights_origin"] = get_cached_location_insights(origin.name, scenic_mode)
+                    if "insights_origin" in st.session_state:
+                        st.markdown(st.session_state["insights_origin"])
 
                     detail_col1, detail_col2 = st.columns(2)
                     with detail_col1:
-                        with st.expander("☀️ Daylight hours", expanded=False):
-                            daylight = calculate_approx_daylight(origin.latitude, origin_date.timetuple().tm_yday)
-                            st.markdown(f"Atlanta will have approximately **{daylight} hours** of daylight on {origin_date.strftime('%b %d')}.")
+                        st.markdown("**☀️ Daylight hours**")
+                        daylight = calculate_approx_daylight(origin.latitude, origin_date.timetuple().tm_yday)
+                        st.markdown(f"Atlanta will have approximately **{daylight} hours** of daylight on {origin_date.strftime('%b %d')}.")
                     with detail_col2:
-                        with st.expander("⚠️ Safety", expanded=False):
-                            st.markdown(get_cached_safety_alerts(origin.name))
+                        st.markdown("**⚠️ Safety**")
+                        st.markdown(get_cached_safety_alerts(origin.name))
 
             # Day expanders
             for idx, row in enumerate(itinerary_rows):
@@ -598,8 +598,9 @@ with tab_itinerary:
                         if f"insights_{idx}" in st.session_state:
                             st.markdown(st.session_state[f"insights_{idx}"])
 
-                    # Collapsed details - keep inside expander as sub-expanders for mobile brevity
-                    with st.expander("☀️ Daylight + Weather", expanded=False):
+                    # Use sections instead of nested expanders because Streamlit does not render nested expanders reliably.
+                    with st.container(border=True):
+                        st.markdown("**☀️ Daylight + Weather**")
                         target_yday=row.get("Day of Year",260)
                         daylight=calculate_approx_daylight(dest.latitude, target_yday)
                         st.markdown(f"~**{daylight} hrs daylight** on {row['Start Date']}.")
@@ -608,7 +609,8 @@ with tab_itinerary:
                         hazards=get_cached_seasonal_hazards(orig.name,dest.name,row["Start Date"])
                         st.markdown(hazards)
 
-                    with st.expander("👶 Toddler routing", expanded=False):
+                    with st.container(border=True):
+                        st.markdown("**👶 Toddler routing**")
                         h_time=row["DriveHours"]
                         if h_time<=3.0: st.info("⏰ **8:30 AM** (arrive lunch) or **1:00 PM** (nap window).")
                         elif h_time<=7.0: st.info(f"⏰ **8:00 AM** start — splits {h_time} hr drive around midday break.")
@@ -623,7 +625,8 @@ with tab_itinerary:
                         elif h_time>3.0: st.markdown(get_cached_ai_midday_break(orig.name,dest.name,h_time))
                         else: st.markdown("Fits single nap window.")
 
-                    with st.expander("⚠️ Safety", expanded=False):
+                    with st.container(border=True):
+                        st.markdown("**⚠️ Safety**")
                         st.warning("Packed out-of-state plates attract break-ins — hide valuables.")
                         st.markdown(get_cached_safety_alerts(dest.name))
 
