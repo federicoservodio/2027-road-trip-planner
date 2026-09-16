@@ -218,10 +218,10 @@ if "selected_leg_idx" not in st.session_state: st.session_state.selected_leg_idx
 if "last_map_click" not in st.session_state: st.session_state.last_map_click=None
 
 def safe_rerun():
-    try:
-        if hasattr(st,"experimental_rerun"): st.experimental_rerun(); return
-        if hasattr(st,"rerun"): st.rerun(); return
-    except: pass
+    rerun = getattr(st, "rerun", None) or getattr(st, "experimental_rerun", None)
+    if rerun is not None:
+        rerun()
+        return
     st.session_state["_needs_manual_refresh"]=True
     if hasattr(st, "stop"):
         st.stop()
@@ -752,7 +752,11 @@ with tab_budget:
                     dest=row["DestObj"]; destination_label=dest.name; checkin_label=date.fromisoformat(row["Check-in Date"]).strftime("%b %d, %Y")
                     with st.container(border=True):
                         c1,c2,c3=st.columns([1.2,2,1])
-                        with c1: st.error("🚨 Park") if dest.is_national_park else st.success("✅ Stop")
+                        with c1:
+                            if dest.is_national_park:
+                                st.error("🚨 Park")
+                            else:
+                                st.success("✅ Stop")
                         with c2: st.markdown(f"**{destination_label}**\n\n{checkin_label}"); 
                         with c3:
                             if st.button("Price", key=f"price_budget_{idx}"):
